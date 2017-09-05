@@ -14,6 +14,7 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.TimeUtils;
+import com.holdtheroof.beat.runner.geometry.Ground;
 
 import java.util.Iterator;
 
@@ -28,9 +29,7 @@ class GameScreen implements Screen {
     private Texture bucketImage;
     private Sound dropSound;
     private Music rainMusic;
-    private Rectangle bucket;
-    private Array<Rectangle> raindrops;
-    private long lastDropTime;
+    private Array<Ground> geometry;
 
 
     public GameScreen (final Beat game) {
@@ -40,20 +39,15 @@ class GameScreen implements Screen {
         dropSound = Gdx.audio.newSound(Gdx.files.internal("drop.wav"));
         rainMusic = Gdx.audio.newMusic(Gdx.files.internal("rain.mp3"));
 
+        geometry = new Array<Ground>();
+
         rainMusic.setLooping(true);
         rainMusic.play();
 
         camera = new OrthographicCamera();
         camera.setToOrtho(false, 800, 480);
 
-        bucket = new Rectangle();
-        bucket.x = 800 / 2 - 64 / 2;
-        bucket.y = 20;
-        bucket.width = 64;
-        bucket.height = 64;
-
-        raindrops = new Array<Rectangle>();
-        spawnRaindrop();
+        spawnGeometry();
 
     }
 
@@ -64,9 +58,8 @@ class GameScreen implements Screen {
         camera.update();
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
-        batch.draw(bucketImage, bucket.x, bucket.y);
-        for(Rectangle raindrop: raindrops) {
-            batch.draw(dropImage, raindrop.x, raindrop.y);
+        for(Ground ground: geometry) {
+            batch.draw(ground.getTexture(), ground.getX(), ground.getY());
         }
         batch.end();
 
@@ -74,43 +67,29 @@ class GameScreen implements Screen {
             Vector3 touchPos = new Vector3();
             touchPos.set(Gdx.input.getX(), Gdx.input.getY(), 0);
             camera.unproject(touchPos);
-            bucket.x = touchPos.x - 64 / 2;
         }
 
-        if(Gdx.input.isKeyPressed(Input.Keys.LEFT)) bucket.x -= 200 * Gdx.graphics.getDeltaTime();
-        if(Gdx.input.isKeyPressed(Input.Keys.RIGHT)) bucket.x += 200 * Gdx.graphics.getDeltaTime();
-
-        if(bucket.x < 0) bucket.x = 0;
-        if(bucket.x > 800 - 64) bucket.x = 800 - 64;
-
-        if(TimeUtils.nanoTime() - lastDropTime > 1000000000) spawnRaindrop();
-
-        handleRaindrops();
-
-
+        if(geometry.get(geometry.size - 1).getX() < (800-128)) {
+            spawnGeometry();
+        }
+        handleGeometry();
     }
 
-    private void handleRaindrops() {
-        Iterator<Rectangle> iter = raindrops.iterator();
+
+    private void spawnGeometry() {
+        Ground ground = new Ground(800, 100);
+        ground.width = 64;
+        ground.height = 64;
+        geometry.add(ground);
+    }
+
+    private void handleGeometry() {
+        Iterator<Ground> iter = geometry.iterator();
         while(iter.hasNext()) {
-            Rectangle raindrop = iter.next();
-            raindrop.x -= 200 * Gdx.graphics.getDeltaTime();
-            if(raindrop.y + 64 < 0) iter.remove();
-            if(raindrop.overlaps(bucket)) {
-                dropSound.play();
-                iter.remove();
-            }
+            Ground ground = iter.next();
+            ground.setX( ground.getX() - (200 * Gdx.graphics.getDeltaTime()));
+            if(ground.getX() + 128 < 0) iter.remove();
         }
-    }
-
-    private void spawnRaindrop() {
-        Rectangle raindrop = new Rectangle();
-        raindrop.x = 800 -64;
-        raindrop.y = MathUtils.random(0, 480);
-        raindrop.width = 64;
-        raindrop.height = 64;
-        raindrops.add(raindrop);
-        lastDropTime = TimeUtils.nanoTime();
     }
 
     @Override
