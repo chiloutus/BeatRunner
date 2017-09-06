@@ -10,8 +10,8 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 public class Beat extends Game {
 
-    public SpriteBatch batch;
-    public BitmapFont font;
+    SpriteBatch batch;
+    BitmapFont font;
 
     @Override
     public void create() {
