@@ -10,6 +10,7 @@ import com.badlogic.gdx.math.Rectangle;
 public class Player extends Rectangle {
 
     private Texture texture;
+    private PlayerState state;
 
 
     public Player(float x, float y, Texture texture) {
@@ -30,5 +31,13 @@ public class Player extends Rectangle {
     @Override
     public float getY() {
         return y;
+    }
+
+    public void setState(PlayerState state) {
+        this.state = state;
+    }
+
+    public PlayerState getState() {
+        return state;
     }
 }

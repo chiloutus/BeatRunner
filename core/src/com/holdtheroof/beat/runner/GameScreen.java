@@ -1,6 +1,7 @@
 package com.holdtheroof.beat.runner;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.audio.Sound;
@@ -8,28 +9,28 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.Intersector;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 import com.holdtheroof.beat.runner.geometry.Chunk;
 import com.holdtheroof.beat.runner.geometry.Ground;
 import com.holdtheroof.beat.runner.player.Player;
+import com.holdtheroof.beat.runner.player.PlayerState;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-/**
- * Created by gary on 05/09/17.
- */
-
 class GameScreen implements Screen {
+    private static final int PLAYER_JUMP_SPEED = 200;
+    private static final float PLAYER_HEIGHT = 64;
+    private static final float PLAYER_WIDTH = 64;
+    private int currentSpeed;
     private OrthographicCamera camera;
     private SpriteBatch batch;
-    private Texture dropImage;
-    private Texture bucketImage;
-    private Sound dropSound;
-    private Music rainMusic;
     private List<Chunk> chunks;
     private Player player;
     private static final int CHUNK_SIZE = 5;
@@ -42,9 +43,6 @@ class GameScreen implements Screen {
 
         chunks = new ArrayList<Chunk>();
 
-        rainMusic.setLooping(true);
-        rainMusic.play();
-
         camera = new OrthographicCamera();
         camera.setToOrtho(false, 800, 480);
 
@@ -54,7 +52,10 @@ class GameScreen implements Screen {
     }
 
     private void spawnPlayer() {
-        player = new Player(500, 128, new Texture("_water/water1.png"));
+        player = new Player(500, 110, new Texture("_water/water1.png"));
+        player.setWidth(PLAYER_WIDTH);
+        player.setHeight(PLAYER_HEIGHT);
+        player.setState(PlayerState.Standing);
     }
 
     @Override
@@ -75,7 +76,7 @@ class GameScreen implements Screen {
         }
 
         //If there is a gap to the right that needs some geometry to fill it
-        if(getXPositionOfTopofChunk() < (800-128)) {
+        if(getXPositionOfTopofChunk() < (800-200)) {
             spawnGeometryChunk();
         }
         handleGeometry();
@@ -86,14 +87,52 @@ class GameScreen implements Screen {
 //        if(player.getX() < 200) {
 //            player
 //        }
-        if(!Gdx.input.isTouched()) {
-            player.setX(player.getX() - (400 * Gdx.graphics.getDeltaTime()));
+        if(player.getX() <= 650 && Gdx.input.isTouched()) {
+            player.setX(player.getX() + (150 * Gdx.graphics.getDeltaTime()));
+        }
+        handleJump();
+        if(player.getState() == PlayerState.Standing) {
+            boolean overlapsNone = true;
+            for (Chunk chunk: chunks) {
+                for (Ground ground: chunk.getSegments()) {
+                    Rectangle intersection = new Rectangle();
+                    Intersector.intersectRectangles(ground, player, intersection);
+                    if(true) {
+                        overlapsNone = false;
+                        player.setY(128);
+                    }
+                }
+            }
+            if(overlapsNone) {
+                player.setState(PlayerState.Falling);
+            } else {
+                player.setState(PlayerState.Standing);
+            }
         }
 
         if(player.getX() < 0) {
-            //game over?
+
         }
 
+    }
+
+    private void handleJump() {
+        if(Gdx.input.isKeyPressed(Input.Keys.LEFT) && player.getState() == PlayerState.Standing) {
+            player.setState(PlayerState.Jumping);
+            currentSpeed = PLAYER_JUMP_SPEED;
+        }
+
+
+        if (player.getState() == PlayerState.Jumping) {
+            player.setY(player.getY() + (currentSpeed * Gdx.graphics.getDeltaTime()));
+            if(currentSpeed == 0) {
+                player.setState(PlayerState.Falling);
+            }
+            currentSpeed -= 10;
+        } else if (player.getState() == PlayerState.Falling) {
+            player.setY(player.getY() - (currentSpeed * Gdx.graphics.getDeltaTime()));
+            currentSpeed += 10;
+        }
     }
 
     private void drawPlayer() {
@@ -159,7 +198,7 @@ class GameScreen implements Screen {
 
     @Override
     public void show() {
-        rainMusic.play();
+
     }
 
 
@@ -186,9 +225,5 @@ class GameScreen implements Screen {
     @Override
     public void dispose () {
         batch.dispose();
-        dropImage.dispose();
-        bucketImage.dispose();
-        dropSound.dispose();
-        rainMusic.dispose();
     }
 }
