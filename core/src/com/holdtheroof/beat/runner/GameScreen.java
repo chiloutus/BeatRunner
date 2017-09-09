@@ -15,10 +15,12 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
+import com.holdtheroof.beat.runner.game.GameState;
 import com.holdtheroof.beat.runner.geometry.Chunk;
 import com.holdtheroof.beat.runner.geometry.Ground;
 import com.holdtheroof.beat.runner.player.Player;
 import com.holdtheroof.beat.runner.player.PlayerState;
+import com.holdtheroof.beat.runner.utils.CollisionUtils;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -26,16 +28,17 @@ import java.util.List;
 
 class GameScreen implements Screen {
     private static final int PLAYER_JUMP_SPEED = 200;
-    private static final float PLAYER_HEIGHT = 64;
-    private static final float PLAYER_WIDTH = 64;
+    private static final float PLAYER_HEIGHT = 128;
+    private static final float PLAYER_WIDTH = 128;
     private int currentSpeed;
     private OrthographicCamera camera;
     private SpriteBatch batch;
     private List<Chunk> chunks;
     private Player player;
     private static final int CHUNK_SIZE = 5;
-    private static final int GROUND_WIDTH = 64;
-    private static final int GROUND_HEIGHT = 64;
+    private static final int GROUND_WIDTH = 128;
+    private static final int GROUND_HEIGHT = 128;
+    private GameState state;
 
 
     public GameScreen (final Beat game) {
@@ -52,7 +55,7 @@ class GameScreen implements Screen {
     }
 
     private void spawnPlayer() {
-        player = new Player(500, 110, new Texture("_water/water1.png"));
+        player = new Player(150, 127, new Texture("_water/water1.png"));
         player.setWidth(PLAYER_WIDTH);
         player.setHeight(PLAYER_HEIGHT);
         player.setState(PlayerState.Standing);
@@ -87,33 +90,49 @@ class GameScreen implements Screen {
 //        if(player.getX() < 200) {
 //            player
 //        }
-        if(player.getX() <= 650 && Gdx.input.isTouched()) {
-            player.setX(player.getX() + (150 * Gdx.graphics.getDeltaTime()));
-        }
+        boolean blocked =false;
         handleJump();
-        if(player.getState() == PlayerState.Standing) {
-            boolean overlapsNone = true;
+        if(player.getState() != PlayerState.Jumping) {
+            boolean ontopOfNone = true;
             for (Chunk chunk: chunks) {
                 for (Ground ground: chunk.getSegments()) {
                     Rectangle intersection = new Rectangle();
                     Intersector.intersectRectangles(ground, player, intersection);
-                    if(true) {
-                        overlapsNone = false;
-                        player.setY(128);
+                    if(intersection.y != 0 && intersection.y + intersection.height > player.y && player.y >= 120) {
+                        ontopOfNone = false;
+                        player.setY(127);
+                    }
+                    if(intersection.x != 0 && intersection.x + intersection.width > ground.x && player.y < 120) {
+                        blocked = true;
                     }
                 }
             }
-            if(overlapsNone) {
+            if(ontopOfNone) {
                 player.setState(PlayerState.Falling);
             } else {
                 player.setState(PlayerState.Standing);
             }
         }
 
-        if(player.getX() < 0) {
-
+        if(player.getX() <= 650 && Gdx.input.isTouched() && !blocked) {
+            player.setX(player.getX() + (150 * Gdx.graphics.getDeltaTime()));
+        }
+        if(blocked) {
+            player.setX(player.getX() - (400 * Gdx.graphics.getDeltaTime()));
         }
 
+
+        if(player.getX() < 0 || player.getY() < 0) {
+            state = GameState.Over;
+            resetWorld();
+        }
+
+    }
+
+    private void resetWorld() {
+        chunks = new ArrayList<Chunk>();
+        spawnPlayer();
+        spawnInitialGeometryChunk();
     }
 
     private void handleJump() {
@@ -160,7 +179,7 @@ class GameScreen implements Screen {
             ground.width = GROUND_WIDTH;
             ground.height = GROUND_HEIGHT;
             chunk.add(ground);
-            original+=(GROUND_WIDTH*2);
+            original+=(GROUND_WIDTH);
         }
         chunks.add(chunk);
     }
@@ -175,7 +194,7 @@ class GameScreen implements Screen {
             ground.width = GROUND_WIDTH;
             ground.height = GROUND_HEIGHT;
             chunk.add(ground);
-            original+=(GROUND_WIDTH*2);
+            original+=(GROUND_WIDTH);
         }
         chunks.add(chunk);
     }
