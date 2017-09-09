@@ -38,7 +38,6 @@ class GameScreen implements Screen {
     private static final int CHUNK_SIZE = 5;
     private static final int GROUND_WIDTH = 128;
     private static final int GROUND_HEIGHT = 128;
-    private GameState state;
 
 
     public GameScreen (final Beat game) {
@@ -55,7 +54,7 @@ class GameScreen implements Screen {
     }
 
     private void spawnPlayer() {
-        player = new Player(150, 127, new Texture("_water/water1.png"));
+        player = new Player(150, 127, new Texture("water1.png"));
         player.setWidth(PLAYER_WIDTH);
         player.setHeight(PLAYER_HEIGHT);
         player.setState(PlayerState.Standing);
@@ -87,9 +86,6 @@ class GameScreen implements Screen {
     }
 
     private void handlePlayer() {
-//        if(player.getX() < 200) {
-//            player
-//        }
         boolean blocked =false;
         handleJump();
         if(player.getState() != PlayerState.Jumping) {
@@ -114,16 +110,15 @@ class GameScreen implements Screen {
             }
         }
 
-        if(player.getX() <= 650 && Gdx.input.isTouched() && !blocked) {
-            player.setX(player.getX() + (150 * Gdx.graphics.getDeltaTime()));
-        }
+//        if(player.getX() <= 650 && Gdx.input.isTouched() && !blocked) {
+//            player.setX(player.getX() + (150 * Gdx.graphics.getDeltaTime()));
+//        }
         if(blocked) {
             player.setX(player.getX() - (400 * Gdx.graphics.getDeltaTime()));
         }
 
 
         if(player.getX() < 0 || player.getY() < 0) {
-            state = GameState.Over;
             resetWorld();
         }
 
@@ -136,7 +131,7 @@ class GameScreen implements Screen {
     }
 
     private void handleJump() {
-        if(Gdx.input.isKeyPressed(Input.Keys.LEFT) && player.getState() == PlayerState.Standing) {
+        if(Gdx.input.isTouched() && player.getState() == PlayerState.Standing) {
             player.setState(PlayerState.Jumping);
             currentSpeed = PLAYER_JUMP_SPEED;
         }
@@ -173,7 +168,7 @@ class GameScreen implements Screen {
     private void spawnInitialGeometryChunk() {
         Chunk chunk = new Chunk();
         int original = 0;
-        Texture texture = new Texture("_ground/ground0" + MathUtils.random(1, 8) + ".png");
+        Texture texture = new Texture("ground0" + MathUtils.random(1, 8) + ".png");
         for (int i = 0; i < CHUNK_SIZE; i++) {
             Ground ground = new Ground(original, 0, texture);
             ground.width = GROUND_WIDTH;
@@ -187,8 +182,8 @@ class GameScreen implements Screen {
 
     private void spawnGeometryChunk() {
         Chunk chunk = new Chunk();
-        int original = 928;
-        Texture texture = new Texture("_ground/ground0" + MathUtils.random(1, 8) + ".png");
+        int original = MathUtils.random(928,1048);
+        Texture texture = new Texture("ground0" + MathUtils.random(1, 8) + ".png");
         for (int i = 0; i < CHUNK_SIZE; i++) {
             Ground ground = new Ground(original, 0, texture);
             ground.width = GROUND_WIDTH;
@@ -206,7 +201,7 @@ class GameScreen implements Screen {
                 Ground ground = chunk.getSegments().get(y);
                 Ground currentGround = chunks.get(i).getSegments().get(y);
                 currentGround.setX(currentGround.getX() - (400 * Gdx.graphics.getDeltaTime() ));
-                if(ground.getX() + 128 < 0)  {
+                if(ground.getX() + GROUND_WIDTH < 0)  {
                     // remove ground pieces that have been moved out of frame
                     chunks.get(i).getSegments().remove(y);
                 }
