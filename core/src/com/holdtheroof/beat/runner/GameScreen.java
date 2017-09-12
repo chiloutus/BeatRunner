@@ -8,6 +8,7 @@ import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Intersector;
 import com.badlogic.gdx.math.MathUtils;
@@ -30,11 +31,14 @@ class GameScreen implements Screen {
     private static final int PLAYER_JUMP_SPEED = 200;
     private static final float PLAYER_HEIGHT = 128;
     private static final float PLAYER_WIDTH = 128;
-    private int currentSpeed;
+    private static final int MAX_PLAYER_SPEED = 300;
+    private int currentSpeed = 200;
     private OrthographicCamera camera;
     private SpriteBatch batch;
     private List<Chunk> chunks;
     private Player player;
+    private Texture background;
+    private Sprite backgroundSprite;
     private static final int CHUNK_SIZE = 5;
     private static final int GROUND_WIDTH = 128;
     private static final int GROUND_HEIGHT = 128;
@@ -42,6 +46,9 @@ class GameScreen implements Screen {
 
     public GameScreen (final Beat game) {
         batch = new SpriteBatch();
+
+        background = new Texture("background.png");
+        backgroundSprite = new Sprite(background);
 
         chunks = new ArrayList<Chunk>();
 
@@ -67,6 +74,7 @@ class GameScreen implements Screen {
         camera.update();
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
+        backgroundSprite.draw(batch);
         drawPlayer();
         drawChunks();
         batch.end();
@@ -78,7 +86,7 @@ class GameScreen implements Screen {
         }
 
         //If there is a gap to the right that needs some geometry to fill it
-        if(getXPositionOfTopofChunk() < (800-200)) {
+        if(getXPositionOfTopofChunk() < (800 - GROUND_WIDTH)) {
             spawnGeometryChunk();
         }
         handleGeometry();
@@ -88,7 +96,7 @@ class GameScreen implements Screen {
     private void handlePlayer() {
         boolean blocked =false;
         handleJump();
-        if(player.getState() != PlayerState.Jumping) {
+        if(player.getState() != PlayerState.Jumping && player.getState() != PlayerState.PreparingJump) {
             boolean ontopOfNone = true;
             for (Chunk chunk: chunks) {
                 for (Ground ground: chunk.getSegments()) {
@@ -132,14 +140,24 @@ class GameScreen implements Screen {
 
     private void handleJump() {
         if(Gdx.input.isTouched() && player.getState() == PlayerState.Standing) {
-            player.setState(PlayerState.Jumping);
+            player.setState(PlayerState.PreparingJump);
             currentSpeed = PLAYER_JUMP_SPEED;
         }
+        if(Gdx.input.isTouched() && player.getState() == PlayerState.PreparingJump) {
+            if(currentSpeed < MAX_PLAYER_SPEED) {
+                currentSpeed += 50;
+            } else {
+                player.setState(PlayerState.Jumping);
+            }
+        } else {
+            if(player.getState() == PlayerState.PreparingJump) {
+                player.setState(PlayerState.Jumping);
+            }
+        }
 
-
-        if (player.getState() == PlayerState.Jumping) {
+        if (player.getState() == PlayerState.Jumping || player.getState() == PlayerState.PreparingJump) {
             player.setY(player.getY() + (currentSpeed * Gdx.graphics.getDeltaTime()));
-            if(currentSpeed == 0) {
+            if(currentSpeed <= 0) {
                 player.setState(PlayerState.Falling);
             }
             currentSpeed -= 10;
@@ -147,6 +165,11 @@ class GameScreen implements Screen {
             player.setY(player.getY() - (currentSpeed * Gdx.graphics.getDeltaTime()));
             currentSpeed += 10;
         }
+
+
+
+
+
     }
 
     private void drawPlayer() {
@@ -169,7 +192,7 @@ class GameScreen implements Screen {
         Chunk chunk = new Chunk();
         int original = 0;
         Texture texture = new Texture("ground0" + MathUtils.random(1, 8) + ".png");
-        for (int i = 0; i < CHUNK_SIZE; i++) {
+        while (original < 800) {
             Ground ground = new Ground(original, 0, texture);
             ground.width = GROUND_WIDTH;
             ground.height = GROUND_HEIGHT;
@@ -182,9 +205,9 @@ class GameScreen implements Screen {
 
     private void spawnGeometryChunk() {
         Chunk chunk = new Chunk();
-        int original = MathUtils.random(928,1048);
+        int original = MathUtils.random(900,1300);
         Texture texture = new Texture("ground0" + MathUtils.random(1, 8) + ".png");
-        for (int i = 0; i < CHUNK_SIZE; i++) {
+        for (int i = 0; i < MathUtils.random(3,CHUNK_SIZE); i++) {
             Ground ground = new Ground(original, 0, texture);
             ground.width = GROUND_WIDTH;
             ground.height = GROUND_HEIGHT;

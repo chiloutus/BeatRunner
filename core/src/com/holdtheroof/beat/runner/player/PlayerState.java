@@ -5,5 +5,5 @@ package com.holdtheroof.beat.runner.player;
  */
 
 public enum PlayerState {
-    Jumping, Falling, Standing
+    PreparingJump, Jumping, Falling, Standing
 }
